@@ -9,3 +9,4 @@ build/
 # Ignore log files
 *.log
 # Ignore coverage reports
+/src/generated/prisma

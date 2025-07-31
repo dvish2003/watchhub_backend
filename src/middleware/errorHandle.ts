@@ -1,30 +1,24 @@
 import {NextFunction,Request,Response} from "express";
-import mongoose from "mongoose";
+import prisma from "../config/prisma";
 import {APIError} from "../error/ApiErrors";
 
 export const errorHandler = (
-    err:any,
-    req:Request,
-    res:Response
-) =>{
-    if(err instanceof mongoose.Error){
-        res.status(400).json({
-            
-            message: err.message
-        }
-    );
-
-    }
-    else if(err instanceof APIError){
-        res.status(err.statusCode).json({
-            message: err.message
-        });
-    } else {
-        console.error("Unexpected error:", err);
-        res.status(500).json({
-            message: "Internal Server Error"
+    err: APIError,
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    console.error("Error occurred:", err);
+    
+    if (err instanceof APIError) {
+        return res.status(err.statusCode).json({
+            message: err.message,
+            status: err.statusCode
         });
     }
 
-
+    return res.status(500).json({
+        message: "Internal Server Error",
+        status: 500
+    });
 }

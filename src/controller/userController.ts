@@ -1,35 +1,43 @@
 import { NextFunction,Request,Response } from "express";
-import { UserModel } from "../model/User";
 import { errorHandler } from "../middleware/errorHandle";
 import jwt from 'jsonwebtoken';
+import prisma from "../config/prisma";
+import { error } from "node:console";
 
 export const saveUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    console.log("User data received:...............................................");
-
-    try {
-        const newUser = new UserModel(req.body);
-        console.log("New user created:", newUser);
-
-        const existUser = await UserModel.findOne({ email: newUser.email });
-        if (existUser) {
-            console.log("User already exists..........................:");
-            return res.status(200).json({
-                message: "User already registered. Please login.",
-                status: "400"
-            });
+try{
+        const existUser = await prisma.user.findUnique({
+        where: {
+            email: req.body.email
         }
+    });
 
-        const user = await newUser.save();
-        console.log("User saved successfully:", user);
-
-        return res.status(201).json({
-            message: "User created successfully",
-            status: "201"
+    if (existUser) {
+        return res.status(200).json({
+            message: "User already registered. Please login.",
+            status: "400"
         });
-
-    } catch (err) {
-        return errorHandler(err, req, res);
     }
+
+  
+    const newUser = await prisma.user.create({
+        data: {
+            name: req.body.name,
+            email: req.body.email,
+            password: req.body.password,
+            role: 'user'
+        }
+    })
+          return res.status(201).json({
+            message: "User created successfully",
+            status: "201",
+            user: newUser
+        });
+ } catch (err:any) {
+        return errorHandler(err, req, res, next);
+    }
+    
+  
 }
 
 
@@ -51,21 +59,21 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 
 
 export const getUserByEmail = async (req: Request, res: Response, next: NextFunction):Promise<any> => {
-    console.log("User data received:", req.body);
+//     console.log("User data received:", req.body);
 
-   try{ const {email}   = req.body;
+//    try{ const {email}   = req.body;
 
-    const user = await UserModel.findOne({email:email})
-    if(!user){
-        console.log("User Not Found")
-    }
+//     const user = await UserModel.findOne({email:email})
+//     if(!user){
+//         console.log("User Not Found")
+//     }
 
-    return res.status(201).json({
-        message : user,
-        status:'201'
-    })}catch(err){
-        console.log(err)
-    }
+//     return res.status(201).json({
+//         message : user,
+//         status:'201'
+//     })}catch(err){
+//         console.log(err)
+//     }
 }
 
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -74,7 +82,10 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     try {
         const { email, password } = req.body;
 
-        const existUser = await UserModel.findOne({ email });
+        const existUser = await prisma.user.findUnique({
+            where:{
+            email:email
+        }});
 
         const role = existUser?.role;
         if (!existUser) {
@@ -91,14 +102,13 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
         // Create JWT token
         const token = jwt.sign(
-            { id: existUser._id, email: existUser.email },
+            { id: existUser.id, email: existUser.email,role:role },
             process.env.JWT_SECRET as string,
             { expiresIn: '5h' }
         );
 
         return res.status(200).json({
             message:token,
-            role: role,
             status: 200
         });
 
