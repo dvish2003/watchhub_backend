@@ -1,0 +1,9 @@
+install prisma "npm install prisma @prisma/client"
+
+prisma init " npx prisma init"
+
+migrate table "npx prisma migrate dev --name init"
+
+if create new table after run "npx prisma migrate dev --name add-'table name'-table"
+
+optional but safe 'npx prisma generate'
